@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Crypto & Stock Price Tracker | Real-Time Alerts</title>
+  
+  <!-- Google Fonts: Inter & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <!-- Application Styles -->
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- Ambient Light Effects -->
+  <div class="ambient-glow-1"></div>
+  <div class="ambient-glow-2"></div>
+
+  <!-- Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area">
+        <div class="logo-icon-wrap">
+          <div class="pulse-ring"></div>
+          <span class="logo-icon">📈</span>
+        </div>
+        <div class="brand-text">
+          <h1>CryptoStock <span class="brand-badge">Pulse</span></h1>
+          <span class="brand-sub">Real-Time Price & Alert Tracker</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Live Connection Pill -->
+        <div class="status-badge" title="Live WebSocket stream connection">
+          <span class="status-dot connected" id="wsDot"></span>
+          <span id="wsStatus">Connecting...</span>
+        </div>
+
+        <!-- Theme Toggle -->
+        <button class="btn-icon-only" id="themeToggleBtn" title="Toggle Dark/Light Theme">☀️</button>
+
+        <!-- New Alert Action -->
+        <button class="btn btn-primary" id="btnOpenAlertModal">
+          <span>+</span> Create Alert
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Top Live Ticker Strip -->
+  <div class="live-ticker-strip">
+    <div class="ticker-track" id="tickerTrack">
+      <!-- Live ticker items injected via JS -->
+    </div>
+  </div>
+
+  <!-- Main Navigation Tabs -->
+  <nav class="main-nav">
+    <div class="nav-tabs">
+      <button class="nav-tab active" data-tab="market">
+        <span>📊</span> Market Watch
+      </button>
+      <button class="nav-tab" data-tab="alerts">
+        <span>🔔</span> Active Alerts <span class="tab-badge" id="badgeActiveAlerts">0</span>
+      </button>
+      <button class="nav-tab" data-tab="history">
+        <span>📋</span> Trigger History <span class="tab-badge" id="badgeHistory">0</span>
+      </button>
+      <button class="nav-tab" data-tab="chart">
+        <span>📈</span> Live Analytics
+      </button>
+      <button class="nav-tab" data-tab="settings">
+        <span>⚙️</span> Sound & Alert Settings
+      </button>
+    </div>
+  </nav>
+
+  <!-- Main Application Body -->
+  <main class="main-content">
+    
+    <!-- TAB 1: Market Watch -->
+    <section class="tab-pane active" id="tab-market">
+      <div class="sub-toolbar">
+        <div class="filter-pills">
+          <button class="filter-btn active" data-filter="all">All Assets</button>
+          <button class="filter-btn" data-filter="crypto">Cryptocurrencies</button>
+          <button class="filter-btn" data-filter="stock">Stocks & Equities</button>
+        </div>
+
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="searchAssetInput" placeholder="Search symbol or name (e.g. BTC, NVDA)...">
+        </div>
+      </div>
+
+      <!-- Assets Cards Grid -->
+      <div class="market-grid" id="marketGrid">
+        <!-- Rendered by app.js -->
+      </div>
+    </section>
+
+    <!-- TAB 2: Active Alerts Tracker -->
+    <section class="tab-pane" id="tab-alerts">
+      <div class="alerts-overview-bar">
+        <div class="stat-card">
+          <span class="stat-label">Active Monitored Alerts</span>
+          <span class="stat-val text-green" id="statActiveAlerts">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Tracked Market Assets</span>
+          <span class="stat-val" id="statAssetsCount">0</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-label">Triggers Recorded</span>
+          <span class="stat-val" id="statTriggeredCount">0</span>
+        </div>
+      </div>
+
+      <div class="alerts-table-card">
+        <div class="table-header-row">
+          <div class="table-header-title">Active Price Alert Rules</div>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('btnOpenAlertModal').click()">+ Add Rule</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="alerts-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Target Condition</th>
+                <th>Current Price</th>
+                <th>Distance to Target</th>
+                <th>Alert Action</th>
+                <th>Active</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="activeAlertsTableBody">
+              <!-- Populated by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 3: Trigger History Logs -->
+    <section class="tab-pane" id="tab-history">
+      <div class="alerts-table-card">
+        <div class="table-header-row">
+          <div class="table-header-title">Alert Trigger Audit Log</div>
+          <button class="btn btn-outline-danger btn-sm" id="btnClearHistory">🗑️ Clear History</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="alerts-table">
+            <thead>
+              <tr>
+                <th>Asset</th>
+                <th>Condition</th>
+                <th>Target Level</th>
+                <th>Triggered Price</th>
+                <th>Timestamp</th>
+                <th>Event Source</th>
+              </tr>
+            </thead>
+            <tbody id="alertHistoryTableBody">
+              <!-- Populated by app.js -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 4: Price Chart & Overlays -->
+    <section class="tab-pane" id="tab-chart">
+      <div class="chart-container-box">
+        <div class="chart-toolbar">
+          <div class="chart-asset-select">
+            <label for="chartAssetSelect" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 600;">Selected Asset:</label>
+            <select id="chartAssetSelect" class="custom-select">
+              <!-- Filled via chart.js -->
+            </select>
+          </div>
+
+          <div style="display: flex; align-items: baseline; gap: 0.75rem;">
+            <span id="chartAssetTitle" style="font-weight: 700; font-size: 1.1rem;">Bitcoin (BTC)</span>
+            <span id="chartAssetPrice" style="font-family: var(--font-mono); font-size: 1.25rem; font-weight: 700;">$0.00</span>
+            <span id="chartAssetChange" class="change-badge positive">+0.00%</span>
+          </div>
+
+          <div class="chart-timeframe-btns">
+            <button class="tf-btn" data-tf="1H">1H</button>
+            <button class="tf-btn active" data-tf="24H">24H</button>
+            <button class="tf-btn" data-tf="7D">7D</button>
+            <button class="tf-btn" data-tf="30D">30D</button>
+          </div>
+        </div>
+
+        <div class="chart-wrapper">
+          <canvas id="assetChartCanvas"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- TAB 5: Settings & Audio Lab -->
+    <section class="tab-pane" id="tab-settings">
+      <div class="settings-grid">
+        <!-- Audio Synthesizer Lab -->
+        <div class="settings-card">
+          <h3>🔊 Web Audio Synthesizer</h3>
+          <p>Instant browser audio chime generation using the Web Audio API without relying on external media files.</p>
+          
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-name">Enable Alert Chimes</span>
+              <span class="setting-desc">Play tone immediately when target price is crossed</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="settingsSoundToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-name">Chime Preset</span>
+              <span class="setting-desc">Select audio waveform style</span>
+            </div>
+            <select id="settingsSoundPreset" class="custom-select">
+              <option value="chime">Harmonic Chime</option>
+              <option value="urgent">Urgent Alarm</option>
+              <option value="sonar">Sonar Ping</option>
+              <option value="cash">Cash Register</option>
+            </select>
+          </div>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-name">Volume Level</span>
+              <span class="setting-desc">Adjust synthesizer loudness</span>
+            </div>
+            <input type="range" id="settingsVolumeSlider" min="10" max="100" value="80" style="width: 120px;">
+          </div>
+
+          <div style="margin-top: 1.25rem;">
+            <button class="btn btn-secondary btn-sm" id="btnTestSound">▶ Test Audio Chime</button>
+          </div>
+        </div>
+
+        <!-- Push Notifications -->
+        <div class="settings-card">
+          <h3>🖥️ Desktop Push Notifications</h3>
+          <p>Receive native system notifications even when the browser tab is running in the background.</p>
+
+          <div class="setting-item">
+            <div class="setting-info">
+              <span class="setting-name">Permission Status</span>
+              <span class="setting-desc">Browser desktop notification authorization</span>
+            </div>
+            <span class="tab-badge" id="notifPermStatus">CHECKING</span>
+          </div>
+
+          <div style="margin-top: 1.25rem;">
+            <button class="btn btn-primary btn-sm" id="btnRequestPerm">Request / Enable Notification Permission</button>
+          </div>
+        </div>
+
+        <!-- System Architecture & Info -->
+        <div class="settings-card">
+          <h3>⚡ Real-Time Feed Architecture</h3>
+          <p>Direct low-latency streaming infrastructure overview.</p>
+          <ul style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.8; padding-left: 1.25rem;">
+            <li><strong>Crypto Stream:</strong> Binance Combined WebSocket (<code style="color: var(--accent-light);">wss://stream.binance.com:9443</code>)</li>
+            <li><strong>Auto Failover:</strong> Binance 24hr Ticker REST API fallback</li>
+            <li><strong>Stock Engine:</strong> Real-time high-frequency tick generator referencing baseline equity market quotes</li>
+            <li><strong>Local Storage:</strong> Alert thresholds & trigger logs persist across sessions</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Create Alert Modal Dialog -->
+  <div class="modal-overlay" id="alertModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="alertModalTitle">🔔 Set Price Alert</h3>
+        <button class="modal-close" id="modalCloseBtn">&times;</button>
+      </div>
+
+      <form id="alertModalForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="alertAssetSelect">Select Asset</label>
+            <select id="alertAssetSelect" class="form-control" required></select>
+            <span id="currentPricePreview" style="font-size: 0.75rem; color: var(--accent-light); font-family: var(--font-mono); margin-top: 2px;"></span>
+          </div>
+
+          <div class="form-group">
+            <label for="alertConditionSelect">Alert Condition</label>
+            <select id="alertConditionSelect" class="form-control" required>
+              <option value="above">Price Crosses Above ( ≥ )</option>
+              <option value="below">Price Crosses Below ( ≤ )</option>
+              <option value="pct_above">24h Gain Exceeds ( +% )</option>
+              <option value="pct_below">24h Drop Exceeds ( -% )</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="alertTargetInput">Target Value ($ USD or % Change)</label>
+            <input type="number" step="any" id="alertTargetInput" class="form-control" placeholder="e.g. 85000" required>
+          </div>
+
+          <div class="form-group">
+            <label for="alertSoundSelect">Sound Tone</label>
+            <select id="alertSoundSelect" class="form-control">
+              <option value="chime">Harmonic Chime</option>
+              <option value="urgent">Urgent Alarm</option>
+              <option value="sonar">Sonar Ping</option>
+              <option value="cash">Cash Register</option>
+            </select>
+          </div>
+
+          <div class="setting-item" style="border-top: none; padding: 0.2rem 0;">
+            <div class="setting-info">
+              <span class="setting-name">Play Audio Tone</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="alertSoundToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item" style="border-top: none; padding: 0.2rem 0;">
+            <div class="setting-info">
+              <span class="setting-name">Desktop Push Notification</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="alertDesktopToggle" checked>
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="setting-item" style="border-top: none; padding: 0.2rem 0;">
+            <div class="setting-info">
+              <span class="setting-name">Trigger Once Only</span>
+              <span class="setting-desc">Auto-disable after first trigger</span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="alertOnceToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <div class="form-group">
+            <label for="alertNoteInput">Personal Note (Optional)</label>
+            <input type="text" id="alertNoteInput" class="form-control" placeholder="e.g. Take profit level / buy dip">
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" id="modalCancelBtn">Cancel</button>
+          <button type="submit" class="btn btn-primary">Save Alert Rule</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Alerts Container -->
+  <div id="toast-container"></div>
+
+  <!-- Application Scripts -->
+  <script src="js/alerts.js"></script>
+  <script src="js/market.js"></script>
+  <script src="js/chart.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
